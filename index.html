@@ -36,6 +36,8 @@
             text-align: center;
             max-width: 400px;
             width: 90%;
+            position: relative;
+            z-index: 10;
         }
 
         h1 {
@@ -55,20 +57,7 @@
             font-weight: 500;
         }
 
-        input[type="date"] {
-            width: 100%;
-            padding: 0.8rem;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-
-        input[type="date"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
+        input[type="date"],
         input[type="text"] {
             width: 100%;
             padding: 0.8rem;
@@ -78,6 +67,7 @@
             transition: border-color 0.3s;
         }
 
+        input[type="date"]:focus,
         input[type="text"]:focus {
             outline: none;
             border-color: #667eea;
@@ -196,6 +186,8 @@
     </style>
 </head>
 <body class="initial-screen">
+    <div class="floating-hearts" id="floatingHearts"></div>
+    
     <div class="container">
         <div id="inputForm">
             <h1>Nhập ngày sinh của bạn</h1>
@@ -217,8 +209,6 @@
                 Cậu là định mệnh của tớ
             </div>
         </div>
-        
-        <div class="floating-hearts" id="floatingHearts"></div>
     </div>
 
     <script>
@@ -256,7 +246,23 @@
             submitBtn.textContent = 'Đang lưu...';
 
             // Gửi dữ liệu lên Google Sheets
-            await saveToGoogleSheets(nameInput.value, birthdateInput.value, isCorrect);
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: nameInput.value,
+                        birthdate: birthdateInput.value,
+                        success: isCorrect
+                    })
+                });
+                console.log('Dữ liệu đã được gửi!');
+            } catch (error) {
+                console.error('Lỗi khi gửi dữ liệu:', error);
+            }
 
             // Bật lại nút submit
             submitBtn.disabled = false;
@@ -277,29 +283,6 @@
             } else {
                 // Ngày sai
                 errorMessage.textContent = 'Xin chia buồn với bạn';
-            }
-        }
-
-        async function saveToGoogleSheets(name, birthdate, success) {
-            try {
-                const data = {
-                    name: name,
-                    birthdate: birthdate,
-                    success: success
-                };
-
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                console.log('Dữ liệu đã được lưu vào Google Sheets');
-            } catch (error) {
-                console.error('Lỗi khi lưu dữ liệu:', error);
             }
         }
 
