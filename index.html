@@ -130,6 +130,24 @@
             font-weight: 500;
         }
 
+        .redirect-button {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #ff6b9d 0%, #c2185b 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .redirect-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(194, 24, 91, 0.3);
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -208,6 +226,9 @@
             <div class="message">
                 Cậu là định mệnh của tớ
             </div>
+            <a href="https://luvher-2810.github.io/info/" class="redirect-button" target="_blank">
+                Liên hệ tớ
+            </a>
         </div>
     </div>
 
