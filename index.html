@@ -105,6 +105,11 @@
             transform: translateY(0);
         }
 
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .error-message {
             color: #e74c3c;
             margin-top: 1rem;
@@ -135,12 +140,6 @@
             font-weight: 500;
         }
 
-        .heart {
-            font-size: 3rem;
-            color: #ff4757;
-            animation: heartbeat 1.5s ease infinite;
-        }
-
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -149,18 +148,6 @@
             to {
                 opacity: 1;
                 transform: translateY(0);
-            }
-        }
-
-        @keyframes heartbeat {
-            0%, 100% {
-                transform: scale(1);
-            }
-            10%, 30% {
-                transform: scale(1.1);
-            }
-            20%, 40% {
-                transform: scale(1);
             }
         }
 
@@ -206,11 +193,6 @@
                 transform: translateY(-100px) rotate(360deg);
             }
         }
-
-        .container {
-            position: relative;
-            z-index: 2;
-        }
     </style>
 </head>
 <body class="initial-screen">
@@ -225,7 +207,7 @@
                 <label for="birthdate">Ngày sinh:</label>
                 <input type="date" id="birthdate" required>
             </div>
-            <button onclick="checkDate()">Kiểm tra</button>
+            <button onclick="checkDate()" id="submitBtn">Kiểm tra</button>
             <div class="error-message" id="errorMessage"></div>
         </div>
 
@@ -240,13 +222,17 @@
     </div>
 
     <script>
-        function checkDate() {
+        // ⚠️ THAY URL NÀY BẰNG URL GOOGLE APPS SCRIPT CỦA BẠN
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYdaR_2q9CVs5zEVL-jv11VqfdSSzcLKXpHaAxkMfSxI8Cz1rcAiGf5cR8HgY_Uhux/exec';
+
+        async function checkDate() {
             const nameInput = document.getElementById('name');
             const birthdateInput = document.getElementById('birthdate');
             const errorMessage = document.getElementById('errorMessage');
             const inputForm = document.getElementById('inputForm');
             const specialMessage = document.getElementById('specialMessage');
             const body = document.body;
+            const submitBtn = document.getElementById('submitBtn');
 
             if (!nameInput.value) {
                 errorMessage.textContent = 'Vui lòng nhập tên của bạn.';
@@ -263,10 +249,20 @@
             const month = date.getMonth() + 1;
             const year = date.getFullYear();
 
-            if (day === 5 && month === 12 && year === 2008) {
-                // Lưu dữ liệu
-                saveData(nameInput.value, birthdateInput.value);
-                
+            const isCorrect = (day === 5 && month === 12 && year === 2008);
+
+            // Vô hiệu hóa nút submit
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang lưu...';
+
+            // Gửi dữ liệu lên Google Sheets
+            await saveToGoogleSheets(nameInput.value, birthdateInput.value, isCorrect);
+
+            // Bật lại nút submit
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Kiểm tra';
+
+            if (isCorrect) {
                 // Ngày đúng - hiển thị màn hình đặc biệt
                 inputForm.classList.add('hidden');
                 specialMessage.classList.add('active');
@@ -279,16 +275,42 @@
                 floatingHearts.classList.add('active');
                 createFloatingHearts();
             } else {
-                // Lưu dữ liệu thất bại
-                saveData(nameInput.value, birthdateInput.value, false);
-                
                 // Ngày sai
                 errorMessage.textContent = 'Xin chia buồn với bạn';
             }
         }
 
+        async function saveToGoogleSheets(name, birthdate, success) {
+            try {
+                const data = {
+                    name: name,
+                    birthdate: birthdate,
+                    success: success
+                };
+
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                console.log('Dữ liệu đã được lưu vào Google Sheets');
+            } catch (error) {
+                console.error('Lỗi khi lưu dữ liệu:', error);
+            }
+        }
+
         // Cho phép xác nhận bằng phím Enter
         document.getElementById('birthdate').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                checkDate();
+            }
+        });
+
+        document.getElementById('name').addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 checkDate();
             }
@@ -313,49 +335,6 @@
                 }, 6000);
             }, 300);
         }
-
-        async function saveData(name, birthdate, success = true) {
-            try {
-                const timestamp = new Date().toISOString();
-                const id = Date.now();
-                const data = {
-                    name: name,
-                    birthdate: birthdate,
-                    success: success,
-                    timestamp: timestamp
-                };
-                
-                await window.storage.set(`entry:${id}`, JSON.stringify(data), true);
-            } catch (error) {
-                console.error('Lỗi khi lưu dữ liệu:', error);
-            }
-        }
-
-        // Hiển thị dữ liệu đã thu thập (chỉ dành cho người tạo)
-        async function viewData() {
-            try {
-                const keys = await window.storage.list('entry:', true);
-                if (!keys || !keys.keys) {
-                    console.log('Chưa có dữ liệu');
-                    return;
-                }
-                
-                const allData = [];
-                for (const key of keys.keys) {
-                    const result = await window.storage.get(key, true);
-                    if (result && result.value) {
-                        allData.push(JSON.parse(result.value));
-                    }
-                }
-                
-                console.log('Dữ liệu thu thập được:', allData);
-                return allData;
-            } catch (error) {
-                console.error('Lỗi khi đọc dữ liệu:', error);
-            }
-        }
-
-        // Để xem dữ liệu, mở Console (F12) và gõ: viewData()
     </script>
 </body>
 </html>
